@@ -1,0 +1,63 @@
+# Use Case 2: API Service for Hubble Observability Demo
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-service
+  labels:
+    app: api-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-service
+  template:
+    metadata:
+      labels:
+        app: api-service
+        tier: backend
+    spec:
+      containers:
+      - name: api
+        image: nginx:alpine
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: api-config
+          mountPath: /etc/nginx/conf.d
+      volumes:
+      - name: api-config
+        configMap:
+          name: api-config
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+data:
+  api.conf: |
+    server {
+        listen 3000;
+        location / {
+            add_header Content-Type application/json;
+            return 200 '{"message": "API Service Response", "timestamp": "$time_iso8601", "service": "api-service"}';
+        }
+        location /health {
+            add_header Content-Type application/json;
+            return 200 '{"status": "healthy", "service": "api-service"}';
+        }
+    }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+spec:
+  selector:
+    app: api-service
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP

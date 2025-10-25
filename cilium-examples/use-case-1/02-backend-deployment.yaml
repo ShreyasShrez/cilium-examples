@@ -1,0 +1,57 @@
+# Use Case 1: Backend Application
+# This is a simple backend service that will communicate with the database
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+    tier: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        tier: api
+    spec:
+      containers:
+      - name: backend
+        image: nicolaka/netshoot
+        command: ["/bin/sh"]
+        args:
+        - "-c"
+        - |
+          # Install and run a proper HTTP server for L7 visibility
+          apk add --no-cache python3
+          python3 -c "
+          import http.server
+          import socketserver
+          import json
+          import datetime
+          
+          class MyHandler(http.server.BaseHTTPRequestHandler):
+              def do_GET(self):
+                  self.send_response(200)
+                  self.send_header('Content-type', 'application/json')
+                  self.end_headers()
+                  response = {
+                      'message': 'Backend service response',
+                      'timestamp': datetime.datetime.now().isoformat(),
+                      'service': 'backend',
+                      'path': self.path,
+                      'method': self.command
+                  }
+                  self.wfile.write(json.dumps(response).encode())
+              
+              def log_message(self, format, *args):
+                  pass  # Disable default logging
+          
+          with socketserver.TCPServer(('', 8080), MyHandler) as httpd:
+              httpd.serve_forever()
+          "
+        ports:
+        - containerPort: 8080

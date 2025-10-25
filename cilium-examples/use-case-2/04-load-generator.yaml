@@ -1,0 +1,43 @@
+# Use Case 2: Load Generator for Hubble Observability Demo
+# This will generate traffic to demonstrate Hubble's monitoring capabilities
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  labels:
+    app: load-generator
+    tier: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+        tier: test
+    spec:
+      containers:
+      - name: load-gen
+        image: nicolaka/netshoot
+        command: ["/bin/sh"]
+        args:
+        - "-c"
+        - |
+          # Generate continuous traffic to demonstrate Hubble monitoring
+          while true; do
+            # Generate traffic to web app
+            wget -qO- http://web-app-service/ > /dev/null 2>&1
+            sleep 2
+            
+            # Generate traffic to API service
+            wget -qO- http://api-service:3000/ > /dev/null 2>&1
+            sleep 3
+            
+            # Generate some database connections (these will be blocked by network policies)
+            nc -zv database-service 5432 > /dev/null 2>&1
+            sleep 5
+            
+            echo "Generated traffic at $(date)"
+          done

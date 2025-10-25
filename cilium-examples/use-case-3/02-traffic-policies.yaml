@@ -1,0 +1,116 @@
+# Use Case 3: Cilium Traffic Policies for Service Mesh
+# These policies demonstrate advanced traffic management capabilities
+
+---
+# Traffic Splitting Policy: 90% to v1, 10% to v2 (canary deployment)
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: service-a-traffic-split
+spec:
+  destinationSelector:
+    matchLabels:
+      app: service-a
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/"
+    backendRefs:
+    - name: service-a-v1
+      port: 8080
+      weight: 90
+    - name: service-a-v2
+      port: 8080
+      weight: 10
+
+---
+# Load Balancing Policy: Round-robin with health checks
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: service-b-load-balancing
+spec:
+  destinationSelector:
+    matchLabels:
+      app: service-b
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/"
+    backendRefs:
+    - name: service-b
+      port: 8080
+    loadBalancer:
+      type: round_robin
+      healthCheck:
+        path: "/health"
+        interval: 30s
+        timeout: 5s
+
+---
+# Circuit Breaker Policy: Protect against cascading failures
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: service-a-circuit-breaker
+spec:
+  destinationSelector:
+    matchLabels:
+      app: service-a
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/"
+    backendRefs:
+    - name: service-a
+      port: 8080
+    circuitBreaker:
+      consecutiveErrors: 5
+      timeout: 30s
+      maxRequests: 100
+
+---
+# Retry Policy: Automatic retries for failed requests
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: service-a-retry-policy
+spec:
+  destinationSelector:
+    matchLabels:
+      app: service-a
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/"
+    backendRefs:
+    - name: service-a
+      port: 8080
+    retry:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: "5xx,reset,connect-failure,refused-stream"
+
+---
+# Timeout Policy: Request timeouts
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: service-a-timeout-policy
+spec:
+  destinationSelector:
+    matchLabels:
+      app: service-a
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/"
+    backendRefs:
+    - name: service-a
+      port: 8080
+    timeout: 30s

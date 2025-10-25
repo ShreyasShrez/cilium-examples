@@ -1,0 +1,188 @@
+# Use Case 3: Service Versions for Canary Deployment Demo
+# This demonstrates traffic splitting between different service versions
+
+---
+# Service A Version 1 (stable)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-a-v1
+  labels:
+    app: service-a
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: service-a
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: service-a
+        version: v1
+    spec:
+      containers:
+      - name: service-a
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: v1-config
+          mountPath: /etc/nginx/conf.d
+      volumes:
+      - name: v1-config
+        configMap:
+          name: service-a-v1-config
+
+---
+# Service A Version 1 ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-a-v1-config
+data:
+  default.conf: |
+    server {
+        listen 8080;
+        location / {
+            add_header Content-Type application/json;
+            return 200 '{"service": "service-a", "version": "v1", "message": "Stable version", "timestamp": "$time_iso8601"}';
+        }
+        location /health {
+            add_header Content-Type application/json;
+            return 200 '{"status": "healthy", "version": "v1"}';
+        }
+    }
+
+---
+# Service A Version 2 (canary)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-a-v2
+  labels:
+    app: service-a
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-a
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: service-a
+        version: v2
+    spec:
+      containers:
+      - name: service-a
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: v2-config
+          mountPath: /etc/nginx/conf.d
+      volumes:
+      - name: v2-config
+        configMap:
+          name: service-a-v2-config
+
+---
+# Service A Version 2 ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-a-v2-config
+data:
+  default.conf: |
+    server {
+        listen 8080;
+        location / {
+            add_header Content-Type application/json;
+            return 200 '{"service": "service-a", "version": "v2", "message": "Canary version", "timestamp": "$time_iso8601"}';
+        }
+        location /health {
+            add_header Content-Type application/json;
+            return 200 '{"status": "healthy", "version": "v2"}';
+        }
+    }
+
+---
+# Service A Service (load balances between v1 and v2)
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-a
+spec:
+  selector:
+    app: service-a
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+
+---
+# Service B (downstream service)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-b
+  labels:
+    app: service-b
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: service-b
+  template:
+    metadata:
+      labels:
+        app: service-b
+    spec:
+      containers:
+      - name: service-b
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: service-b-config
+          mountPath: /etc/nginx/conf.d
+      volumes:
+      - name: service-b-config
+        configMap:
+          name: service-b-config
+
+---
+# Service B ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-b-config
+data:
+  default.conf: |
+    server {
+        listen 8080;
+        location / {
+            add_header Content-Type application/json;
+            return 200 '{"service": "service-b", "message": "Downstream service", "timestamp": "$time_iso8601", "pod": "$hostname"}';
+        }
+        location /health {
+            add_header Content-Type application/json;
+            return 200 '{"status": "healthy", "service": "service-b"}';
+        }
+    }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-b
+spec:
+  selector:
+    app: service-b
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP

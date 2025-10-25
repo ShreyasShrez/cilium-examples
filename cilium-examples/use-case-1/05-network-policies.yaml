@@ -1,0 +1,183 @@
+# Use Case 1: Cilium Network Policies
+# These policies implement micro-segmentation and zero-trust networking
+
+---
+# Allow frontend to communicate with backend
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+spec:
+  endpointSelector:
+    matchLabels:
+      app: frontend
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        app: backend
+    toPorts:
+    - ports:
+      - port: "8080"
+        protocol: TCP
+      rules:
+        http:
+        - method: "GET"
+          path: "/api/.*"
+        - method: "GET"
+          path: "/health"
+
+---
+# Allow backend to communicate with database
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-backend-to-database
+spec:
+  endpointSelector:
+    matchLabels:
+      app: backend
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        app: database
+    toPorts:
+    - ports:
+      - port: "5432"
+        protocol: TCP
+
+---
+# Allow backend to receive traffic from frontend
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-backend-from-frontend
+spec:
+  endpointSelector:
+    matchLabels:
+      app: backend
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        app: frontend
+    toPorts:
+    - ports:
+      - port: "8080"
+        protocol: TCP
+      rules:
+        http:
+        - method: "GET"
+          path: "/api/.*"
+        - method: "GET"
+          path: "/health"
+
+---
+# Allow database to receive traffic from backend
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-database-from-backend
+spec:
+  endpointSelector:
+    matchLabels:
+      app: database
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        app: backend
+    toPorts:
+    - ports:
+      - port: "5432"
+        protocol: TCP
+
+---
+# Allow backend to send traffic to frontend (for WebSockets, SSE, push notifications)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-backend-to-frontend
+spec:
+  endpointSelector:
+    matchLabels:
+      app: backend
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        app: frontend
+    toPorts:
+    - ports:
+      - port: "80"
+        protocol: TCP
+      rules:
+        http:
+        - method: "POST"
+          path: "/ws/.*"
+        - method: "GET"
+          path: "/events/.*"
+        - method: "POST"
+          path: "/notifications/.*"
+
+---
+# Allow frontend to receive traffic from backend
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-frontend-from-backend
+spec:
+  endpointSelector:
+    matchLabels:
+      app: frontend
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        app: backend
+    toPorts:
+    - ports:
+      - port: "80"
+        protocol: TCP
+      rules:
+        http:
+        - method: "POST"
+          path: "/ws/.*"
+        - method: "GET"
+          path: "/events/.*"
+        - method: "POST"
+          path: "/notifications/.*"
+
+---
+# Allow DNS resolution for all pods
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-dns
+spec:
+  endpointSelector: {}
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-system
+        k8s:k8s-app: kube-dns
+    toPorts:
+    - ports:
+      - port: "53"
+        protocol: UDP
+      - port: "53"
+        protocol: TCP
+      - port: "9153"
+        protocol: TCP
+  - toEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-system
+
+---
+# Default deny all traffic (zero-trust approach)
+# This policy ensures that only explicitly allowed communication is permitted
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  endpointSelector: {}
+  ingressDeny:
+  - {}
+  egressDeny:
+  - {}

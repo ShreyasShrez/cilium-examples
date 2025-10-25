@@ -1,0 +1,90 @@
+# Use Case 3: Security Policies for Service Mesh
+# These policies demonstrate mTLS and identity-based security
+
+---
+# Enable mTLS for all service-to-service communication
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: mtls-all-services
+spec:
+  destinationSelector:
+    matchLabels: {}
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/"
+    backendRefs:
+    - name: "*"
+      port: 8080
+    tls:
+      mode: mutual
+      certificateAuthority: cilium-ca
+
+---
+# Identity-based access control for service-a
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: service-a-identity-policy
+spec:
+  destinationSelector:
+    matchLabels:
+      app: service-a
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/"
+    backendRefs:
+    - name: service-a
+      port: 8080
+    identitySelector:
+      matchLabels:
+        app: service-b  # Only service-b can access service-a
+
+---
+# Rate limiting policy
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: service-a-rate-limit
+spec:
+  destinationSelector:
+    matchLabels:
+      app: service-a
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/"
+    backendRefs:
+    - name: service-a
+      port: 8080
+    rateLimit:
+      requestsPerSecond: 100
+      burst: 200
+
+---
+# JWT authentication policy
+apiVersion: cilium.io/v2
+kind: CiliumTrafficPolicy
+metadata:
+  name: service-a-jwt-auth
+spec:
+  destinationSelector:
+    matchLabels:
+      app: service-a
+  rules:
+  - matches:
+    - headers:
+      - name: ":path"
+        value: "/api/"
+    backendRefs:
+    - name: service-a
+      port: 8080
+    jwt:
+      issuer: "https://auth.example.com"
+      audiences: ["api-service"]
+      jwks: "https://auth.example.com/.well-known/jwks.json"
