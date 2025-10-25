@@ -36,7 +36,7 @@ kubectl apply -f 04-services.yaml
 kubectl apply -f 05-network-policies.yaml
 ```
 
-**🔐 Security Note**: The database deployment now uses Kubernetes Secrets instead of hardcoded passwords. See [SECRETS-MANAGEMENT.md](../../SECRETS-MANAGEMENT.md) for details.
+**🔐 Security Note**: The database deployment now uses Kubernetes Secrets instead of hardcoded passwords.
 
 ## Testing the Policies
 

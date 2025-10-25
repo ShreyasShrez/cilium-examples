@@ -42,7 +42,7 @@ kubectl apply -f 03-database.yaml
 kubectl apply -f 04-load-generator.yaml
 ```
 
-**🔐 Security Note**: The database deployment now uses Kubernetes Secrets instead of hardcoded passwords. See [SECRETS-MANAGEMENT.md](../../SECRETS-MANAGEMENT.md) for details.
+**🔐 Security Note**: The database deployment now uses Kubernetes Secrets instead of hardcoded passwords.
 
 ## Key Features Demonstrated
 
