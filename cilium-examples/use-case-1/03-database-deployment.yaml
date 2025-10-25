@@ -23,7 +23,15 @@ spec:
         image: postgres:13-alpine
         env:
         - name: POSTGRES_PASSWORD
-          value: "password"
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: postgres-password
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: postgres-user
         - name: POSTGRES_DB
           value: "appdb"
         ports:

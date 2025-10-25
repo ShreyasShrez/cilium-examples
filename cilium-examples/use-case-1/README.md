@@ -25,12 +25,18 @@ Internet → Frontend (nginx) → Backend (netshoot) → Database (PostgreSQL)
 Deploy the files in this order:
 
 ```bash
+# 1. Create database secret first
+kubectl apply -f 03-database-secret.yaml
+
+# 2. Deploy applications
 kubectl apply -f 01-frontend-deployment.yaml
 kubectl apply -f 02-backend-deployment.yaml
 kubectl apply -f 03-database-deployment.yaml
 kubectl apply -f 04-services.yaml
 kubectl apply -f 05-network-policies.yaml
 ```
+
+**🔐 Security Note**: The database deployment now uses Kubernetes Secrets instead of hardcoded passwords. See [SECRETS-MANAGEMENT.md](../../SECRETS-MANAGEMENT.md) for details.
 
 ## Testing the Policies
 

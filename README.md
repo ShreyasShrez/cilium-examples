@@ -153,6 +153,7 @@ cilium-examples/
 - **[Cilium Setup Guide](CILIUM-SETUP.md)**: Installation and configuration
 - **[Hubble UI Guide](HUBBLE-UI-GUIDE.md)**: Detailed UI analysis and usage
 - **[Cilium vs AWS VPC CNI](cilium-vs-aws-vpc-cni-comparison.md)**: Feature comparison
+- **[Secrets Management](SECRETS-MANAGEMENT.md)**: Security best practices for secrets
 - **[L7 Testing Commands](cilium-examples/use-case-1/06-l7-testing-commands.md)**: HTTP policy testing
 
 ## 🎨 Screenshots

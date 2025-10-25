@@ -27,6 +27,23 @@ This example includes:
 - **Database**: PostgreSQL database
 - **Load Generator**: Tool to generate traffic for observation
 
+## Quick Start
+
+Deploy the applications in order:
+
+```bash
+# 1. Create database secret first
+kubectl apply -f 03-database-secret.yaml
+
+# 2. Deploy applications
+kubectl apply -f 01-web-app.yaml
+kubectl apply -f 02-api-service.yaml
+kubectl apply -f 03-database.yaml
+kubectl apply -f 04-load-generator.yaml
+```
+
+**🔐 Security Note**: The database deployment now uses Kubernetes Secrets instead of hardcoded passwords. See [SECRETS-MANAGEMENT.md](../../SECRETS-MANAGEMENT.md) for details.
+
 ## Key Features Demonstrated
 
 ### 1. Real-time Flow Monitoring
